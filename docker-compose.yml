@@ -1,0 +1,11 @@
+version: "3.9"
+
+services:
+  taiga-mcp:
+    image: ghcr.io/talhaorak/pytaiga-mcp:latest
+    container_name: taiga-mcp
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "8087:8080"

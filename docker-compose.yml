@@ -1,13 +1,12 @@
 services:
   taiga-mcp:
-    image: ghcr.io/talhaorak/pytaiga-mcp:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ghcr.io/webcrewstudio/taiga-mcp:latest
     container_name: taiga-mcp
     restart: unless-stopped
     env_file:
       - .env
-    entrypoint: ["/app/.venv/bin/python"]
-    command:
-      - "-c"
-      - "import os; from src.server import mcp; public_host=os.environ.get('MCP_PUBLIC_HOST', 'localhost'); public_origin=os.environ.get('MCP_PUBLIC_ORIGIN', 'http://localhost'); mcp.settings.host='0.0.0.0'; mcp.settings.port=8080; mcp.settings.transport_security.allowed_hosts += [public_host, public_host + ':443', public_host + ':*']; mcp.settings.transport_security.allowed_origins += [public_origin]; mcp.run(transport='streamable-http')"
     ports:
       - "127.0.0.1:8087:8080"

@@ -39,10 +39,13 @@ cd webcrewstudio-taiga-mcp
 ```text
 .
 ├── docker-compose.yml
+├── Dockerfile
 ├── .env.example
 ├── .gitignore
 ├── README.md
 ├── LICENSE
+├── docker/
+│   └── patch_upstream.py
 ├── nginx/
 │   └── taiga-mcp.conf
 └── docs/
@@ -177,6 +180,27 @@ MCP_PUBLIC_ORIGIN=https://your-real-subdomain.example.com
 
 # Step 5 — Start MCP Server
 
+This repository builds a WebCrewStudio-owned Docker image from the upstream Taiga MCP image and applies a small runtime patch:
+
+- starts FastMCP with `streamable-http` transport instead of stdio
+- binds the MCP app to `0.0.0.0:8080` inside the container
+- adds `MCP_PUBLIC_HOST` and `MCP_PUBLIC_ORIGIN` to FastMCP DNS rebinding protection
+- preserves the environment-authenticated default Taiga session across streamable HTTP transport cleanup
+
+Build the image:
+
+```bash
+docker compose build
+```
+
+On Apple Silicon, build the amd64 image explicitly:
+
+```bash
+DOCKER_DEFAULT_PLATFORM=linux/amd64 docker compose build
+```
+
+Start the server:
+
 ```bash
 docker compose up -d
 ```
@@ -198,6 +222,24 @@ Successful username/password auto-authentication includes log lines similar to:
 ```text
 Login successful. Auth token acquired.
 Auto-authentication successful. Default session created: 'default'
+```
+
+---
+
+# Optional — Publish Docker Image
+
+After testing, publish the owned image to GHCR:
+
+```bash
+docker login ghcr.io
+docker compose build
+docker push ghcr.io/webcrewstudio/taiga-mcp:latest
+```
+
+On the VPS you can then deploy either by building from this repository or by pulling the published image. If you want pull-only deployment, remove the `build` block from `docker-compose.yml` on the server and keep:
+
+```yaml
+image: ghcr.io/webcrewstudio/taiga-mcp:latest
 ```
 
 ---

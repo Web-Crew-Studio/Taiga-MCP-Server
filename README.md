@@ -197,6 +197,46 @@ MCP_PUBLIC_ORIGIN=https://your-real-subdomain.example.com
 
 ---
 
+# Local Development
+
+For local development, run the same setup script:
+
+```bash
+./scripts/setup-vps.sh
+```
+
+When prompted for the public MCP URL, use:
+
+```text
+http://localhost:8087/mcp
+```
+
+This writes local values to `.env`:
+
+```env
+MCP_PUBLIC_HOST=localhost:8087
+MCP_PUBLIC_ORIGIN=http://localhost:8087
+```
+
+The local MCP server will be available at:
+
+```text
+http://localhost:8087/mcp
+```
+
+Verify it with:
+
+```bash
+curl -i -X POST http://localhost:8087/mcp \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: application/json, text/event-stream' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"curl","version":"0.0.1"}}}'
+```
+
+On Apple Silicon, Docker Compose is already configured to build and run the upstream amd64 image with emulation.
+
+---
+
 # Step 5 — Start MCP Server
 
 This repository builds a WebCrewStudio-owned Docker image from the upstream Taiga MCP image and applies a small runtime patch:

@@ -39,6 +39,43 @@ source = replace_once(
 
 source = replace_once(
     source,
+    """    result = _execute_taiga_operation(
+        "list_projects", lambda: taiga_client_wrapper.api.projects.list()
+    )
+    return _filter_response(result, "project", verbosity)
+""",
+    """    current_user = _execute_taiga_operation(
+        "get_current_user",
+        lambda: taiga_client_wrapper.api.users.get_me(),
+    )
+    current_user_id = current_user.get("id")
+    if current_user_id is None:
+        raise RuntimeError("Could not determine authenticated Taiga user id.")
+
+    result = _execute_taiga_operation(
+        "list_projects",
+        lambda: taiga_client_wrapper.api.projects.list(member=current_user_id),
+    )
+    return _filter_response(result, "project", verbosity)
+""",
+)
+
+source = replace_once(
+    source,
+    """    # pytaigaclient's list() likely behaves similarly to python-taiga's
+    return list_projects(actual_session_id, verbosity)  # Keep delegation
+""",
+    """    taiga_client_wrapper = _get_authenticated_client(actual_session_id)
+    result = _execute_taiga_operation(
+        "list_all_projects",
+        lambda: taiga_client_wrapper.api.projects.list(),
+    )
+    return _filter_response(result, "project", verbosity)
+""",
+)
+
+source = replace_once(
+    source,
     """# --- Run the server ---
 if __name__ == "__main__":
     mcp.run()

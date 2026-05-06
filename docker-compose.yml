@@ -4,6 +4,7 @@ services:
       context: .
       dockerfile: Dockerfile
     image: ghcr.io/webcrewstudio/taiga-mcp:latest
+    platform: linux/amd64
     container_name: taiga-mcp
     restart: unless-stopped
     env_file:

@@ -46,6 +46,8 @@ cd webcrewstudio-taiga-mcp
 ├── LICENSE
 ├── docker/
 │   └── patch_upstream.py
+├── scripts/
+│   └── setup-vps.sh
 ├── nginx/
 │   └── taiga-mcp.conf
 └── docs/
@@ -140,6 +142,23 @@ Application token authentication is only available for self-hosted Taiga instanc
 ---
 
 # Step 4 — Configure Environment
+
+You can configure the VPS interactively:
+
+```bash
+./scripts/setup-vps.sh
+```
+
+The script prompts for:
+
+- Taiga API URL
+- Taiga username/email
+- Taiga password
+- Public MCP URL, for example `https://taiga-mcp.example.com/mcp`
+
+It writes `.env` with `0600` permissions, backs up an existing `.env`, builds the Docker image, recreates the container, and verifies the local `/mcp` endpoint.
+
+Manual configuration is also supported.
 
 Create environment file:
 

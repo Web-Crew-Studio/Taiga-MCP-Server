@@ -112,13 +112,16 @@ sudo apt install docker-compose-plugin -y
 
 This setup uses the standard Taiga cloud authentication flow described in the official Taiga API documentation.
 
-For:
+Taiga cloud has two relevant hosts:
 
 ```text
-https://tree.taiga.io
+https://tree.taiga.io  - Taiga web UI
+https://api.taiga.io   - Taiga API
 ```
 
-Taiga does not provide permanent API keys or application tokens.
+Use `https://tree.taiga.io` in your browser. Configure the MCP server with the API host, `https://api.taiga.io`; the Python client calls `/api/v1/...` paths internally.
+
+For Taiga cloud, Taiga does not provide permanent API keys or application tokens.
 
 Instead, the MCP server authenticates using your Taiga username and password and internally obtains an auth token.
 
@@ -144,10 +147,31 @@ cp .env.example .env
 Edit `.env`:
 
 ```env
-TAIGA_URL=https://tree.taiga.io
+TAIGA_API_URL=https://api.taiga.io
 TAIGA_USERNAME=your_email@example.com
 TAIGA_PASSWORD=your_taiga_password
+
+MCP_PUBLIC_HOST=taiga-mcp.example.com
+MCP_PUBLIC_ORIGIN=https://taiga-mcp.example.com
 ```
+
+`TAIGA_TOKEN` is not used for Taiga cloud. Application token authentication is only relevant for self-hosted Taiga instances that explicitly support it.
+
+Do not commit real domains or credentials. Use placeholders in the repository:
+
+```env
+MCP_PUBLIC_HOST=taiga-mcp.example.com
+MCP_PUBLIC_ORIGIN=https://taiga-mcp.example.com
+```
+
+On your VPS, put the real values only in `.env`:
+
+```env
+MCP_PUBLIC_HOST=your-real-subdomain.example.com
+MCP_PUBLIC_ORIGIN=https://your-real-subdomain.example.com
+```
+
+`MCP_PUBLIC_HOST` and `MCP_PUBLIC_ORIGIN` are added to FastMCP's DNS rebinding allowlist. Without matching values, FastMCP can reject external requests with `421 Invalid Host header`.
 
 ---
 
@@ -169,15 +193,43 @@ Check logs:
 docker logs -f taiga-mcp
 ```
 
+Successful username/password auto-authentication includes log lines similar to:
+
+```text
+Login successful. Auth token acquired.
+Auto-authentication successful. Default session created: 'default'
+```
+
 ---
 
 # Step 6 — Verify Server
 
-Test local endpoint:
+The Docker Compose service starts FastMCP with streamable HTTP transport. The MCP endpoint is `/mcp`.
+
+In production, Docker binds only to localhost:
+
+```text
+127.0.0.1:8087:8080
+```
+
+Expose HTTPS through Nginx:
+
+```text
+https://your-real-subdomain.example.com/mcp
+  ->
+http://127.0.0.1:8087/mcp
+```
+
+Test the local upstream endpoint on the VPS with a minimal MCP initialize request:
 
 ```bash
-curl http://localhost:8087
+curl -i -X POST http://localhost:8087/mcp \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"curl","version":"0.0.1"}}}'
 ```
+
+A successful response returns `200 OK` with a JSON-RPC initialize result. A plain `curl http://localhost:8087`, a GET without an MCP session, or a request without MCP headers can return `404 Not Found`, `400 Bad Request`, or `406 Not Acceptable` depending on the request.
 
 ---
 
@@ -249,7 +301,7 @@ sudo ufw deny 8087
 {
   "mcpServers": {
     "taiga": {
-      "url": "https://taiga-mcp.yourdomain.com"
+      "url": "https://taiga-mcp.example.com/mcp"
     }
   }
 }
@@ -280,9 +332,10 @@ Implement TASK-007 from current sprint backlog.
 
 - Never commit `.env`
 - Never expose real Taiga credentials
+- Never commit real production domains
 - Prefer HTTPS reverse proxy
 - Restrict public access where possible
-- Use API token authentication instead of username/password
+- Keep FastMCP DNS rebinding protection enabled and configure `MCP_PUBLIC_HOST` / `MCP_PUBLIC_ORIGIN` for the public hostname clients use
 
 ---
 
